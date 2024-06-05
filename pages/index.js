@@ -7,7 +7,7 @@ const Home = () => {
   const [socket, setSocket] = useState(null);
   
   useEffect(() => {
-    const socket = io();
+    const socket = io('http://localhost:4001'); // Update this line
     setSocket(socket);
     
     socket.on('connect', () => {
