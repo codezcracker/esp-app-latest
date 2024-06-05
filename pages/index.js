@@ -1,46 +1,23 @@
-// pages/index.js
-import { useEffect, useState } from 'react';
-import io from 'socket.io-client';
+const express = require('express');
+const app = express();
 
-const Home = () => {
-  const [buttonState, setButtonState] = useState(false);
-  const [socket, setSocket] = useState(null);
-  
-  useEffect(() => {
-    const socket = io('esp-app-latest.vercel.app'); // Update this line
-    setSocket(socket);
-    
-    socket.on('connect', () => {
-      console.log('Connected to server');
-    });
-    
-    socket.on('buttonState', (state) => {
-      setButtonState(state);
-    });
-    
-    socket.on('disconnect', () => {
-      console.log('Disconnected from server');
-    });
-    
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
-  
-  const toggleButtonState = () => {
-    const newState = !buttonState;
-    setButtonState(newState);
-    socket.emit('buttonState', newState);
-  };
-  
-  return (
-    <div>
-      <h1>Button State: {buttonState ? 'ON' : 'OFF'}</h1>
-      <button onClick={toggleButtonState}>
-        {buttonState ? 'Turn Off' : 'Turn On'}
-      </button>
-    </div>
-  );
-};
+// Middleware to parse JSON bodies
+app.use(express.json());
 
-export default Home;
+// Basic route
+app.get('/', (req, res) => {
+  res.send('Hello World!');
+});
+
+// POST route to handle incoming data
+app.post('/data', (req, res) => {
+  const { value } = req.body;
+  console.log('Received value:', value);
+  res.json({ message: `Received value: ${value}` });
+});
+
+// Start the server
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`API listening at http://localhost:${port}`);
+});
