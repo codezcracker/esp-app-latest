@@ -8,7 +8,6 @@ const app = express();
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, { cors: { origin: '*' } });
 
-app.use(express.static('src/ui'));
 let mac = "";
 io.on('connection', socket => {
     console.log('New Connection');
