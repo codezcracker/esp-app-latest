@@ -1,29 +1,45 @@
 const express = require('express');
-const cors = require('cors');
-const app = express();
-const port = 4001;
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
+const { Server } = require('socket.io');
 
-const corsOptions = {
-	origin: 'https://esp-app-latest.vercel.app',
-	methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-	credentials: true,
-	allowedHeaders: 'Content-Type,Authorization',
-	exposedHeaders: 'Content-Length,Content-Range',
-	preflightContinue: false,
-	optionsSuccessStatus: 204,
-};
+const dev = process.env.NODE_ENV !== 'production';
+const app = next({ dev });
+const handle = app.getRequestHandler();
 
-app.use(cors(corsOptions));
+const PORT = process.env.PORT || 4001;
 
-app.use((req, res, next) => {
-	res.header('Access-Control-Allow-Private-Network', 'true');
-	next();
-});
-
-app.get('/', (req, res) => {
-	res.send('Hello World!');
-});
-
-app.listen(port, () => {
-	console.log(`Server running at http://localhost:${port}/`);
+app.prepare().then(() => {
+	const server = express();
+	const httpServer = createServer(server);
+	const io = new Server(httpServer, { cors: { origin: '*' } });
+	
+	let buttonState = false;
+	
+	io.on('connection', (socket) => {
+		console.log('New Connection');
+		
+		io.to(socket.id).emit('buttonState', buttonState);
+		
+		socket.on('disconnect', () => {
+			console.log('Disconnected');
+		});
+		
+		socket.on('buttonState', (value) => {
+			console.log('buttonState:', value);
+			buttonState = value;
+			socket.broadcast.emit('buttonState', value);
+		});
+	});
+	
+	server.all('*', (req, res) => {
+		const parsedUrl = parse(req.url, true);
+		handle(req, res, parsedUrl);
+	});
+	
+	httpServer.listen(PORT, (err) => {
+		if (err) throw err;
+		console.log(`Server running on http://localhost:${PORT}`);
+	});
 });
